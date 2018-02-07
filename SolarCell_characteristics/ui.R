@@ -22,6 +22,7 @@ shinyUI(fluidPage(
       actionButton("connect", "Open connection"),
       actionButton("disconnect", "Close connection"),
       h4("-----"),
+      h4("Program negative voltage values"),
        numericInput("dots",
                    "Number of Dots:",
                    min = 10,
@@ -41,14 +42,15 @@ shinyUI(fluidPage(
                    "Maximum allowed Voltage (Keithley 2401 supports up to 21V)",
                    min = 0,
                    max = 21,
-                   value = 3),
+                   value = 5),
       actionButton("meassure", "Do measurements")
     ),
     
     # Show a plot of the generated distribution
     mainPanel(
       
-       plotOutput("distPlot")
+       plotOutput("distPlot"),
+       verbatimTextOutput("param")
     )
   )
 ))

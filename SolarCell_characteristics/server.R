@@ -47,7 +47,7 @@ shinyServer(function(input, output) {
       write.serialConnection(con, ":SENS:FUNC:CONC OFF ");
       #browser()
       
-      #find open circuit current
+      #find short circuit current
       write.serialConnection(con, ":SOUR:FUNC VOLT "); 
       write.serialConnection(con, ":SOUR:VOLT 0 ");
       write.serialConnection(con, ":SENS:FUNC 'CURR:DC' ");  
@@ -55,8 +55,20 @@ shinyServer(function(input, output) {
       write.serialConnection(con, ":TRIG:COUN 1");
       write.serialConnection(con, ":OUTP ON "); Sys.sleep(2)
       write.serialConnection(con, ":Read?"); Sys.sleep(1)
-      Ioc <- read.serialConnection(con); Sys.sleep(1)
-      Ioc <- str_split(Ioc, ",", simplify = T)[2] %>% as.numeric()
+      Isc <- read.serialConnection(con); Sys.sleep(1)
+      Isc <- str_split(Isc, ",", simplify = T)[2] %>% as.numeric()
+      
+      
+      #find open circuit voltage
+      write.serialConnection(con, ":SOUR:FUNC CURR "); 
+      write.serialConnection(con, ":SOUR:CURR 0 ");
+      write.serialConnection(con, ":SENS:FUNC 'VOLT:DC' ");  
+      write.serialConnection(con, paste0(":SENS:VOLT:PROT ", input$max_volt));  # max current of Keithley 2401 is ~ 1.005 A
+      write.serialConnection(con, ":TRIG:COUN 1");
+      write.serialConnection(con, ":OUTP ON "); Sys.sleep(2)
+      write.serialConnection(con, ":Read?"); Sys.sleep(1)
+      Voc <- read.serialConnection(con); Sys.sleep(1)
+      Voc <- str_split(Isc, ",", simplify = T)[1] %>% as.numeric()
       
       ## do the sweep
       write.serialConnection(con, "*RST ");  
@@ -65,8 +77,8 @@ shinyServer(function(input, output) {
       write.serialConnection(con, ":SENS:FUNC 'VOLT:DC' ");  
       write.serialConnection(con, paste0(":SENS:VOLT:PROT ", input$max_volt));  
       write.serialConnection(con, paste0(":SOUR:CURR:START ", 0));  
-      write.serialConnection(con, paste0(":SOUR:CURR:STOP ", Ioc)); 
-      write.serialConnection(con, paste0(":SOUR:CURR:STEP ", Ioc/input$dots)); 
+      write.serialConnection(con, paste0(":SOUR:CURR:STOP ", Isc)); 
+      write.serialConnection(con, paste0(":SOUR:CURR:STEP ", Isc/input$dots)); 
       write.serialConnection(con, ":SOUR:CURR:MODE SWE ");  
       write.serialConnection(con, ":SOUR:SWE:RANG AUTO ");  
       
@@ -96,13 +108,34 @@ shinyServer(function(input, output) {
       volt = volt
     )
     
+    #take only values with negative voltage
+    
+    values$df <- values$df %>%
+      filter(volt < 0) %>%
+      mutate(power = abs(curr) * abs(volt), 
+             is_max = power == max(power))
+    
+    #Isc <- max(values$df$curr)
+    #Voc <- max(values$df$volt)
+    max_p <- values$df %>% filter(is_max == T) %>% select(power) %>% unlist
+    
+    values$parameters <- 
+      paste(" Isc = ", Isc, "A \n",
+        "Voc = ", Voc, "V \n",
+        "Maximum Power = ", max_p, "W \n", 
+        "Fill Factor = ", max_p/(Isc * abs(Voc)))
+    
+  })
+  
+  output$param <- renderText({
+    values$parameters
   })
   
   output$distPlot <- renderPlot({
     
     #browser()
     # generate bins based on input$bins from ui.R
-    ggplot(values$df, aes(x = curr, y = volt)) +
+    ggplot(values$df, aes(x = curr, y = volt, color = is_max)) +
       geom_point() +
       xlab("Current, A") +
       ylab("Voltage, V")

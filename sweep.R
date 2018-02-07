@@ -31,8 +31,8 @@ write.serialConnection(con, ":SENS:CURR:PROT 1 ");
 write.serialConnection(con, ":TRIG:COUN 1"); Sys.sleep(1)
 write.serialConnection(con, ":OUTP ON "); Sys.sleep(1)
 write.serialConnection(con, ":Read?"); Sys.sleep(1)
-Ioc <- read.serialConnection(con); Sys.sleep(1)
-Ioc <- str_split(Ioc, ",", simplify = T)[2] %>% as.numeric()
+Isc <- read.serialConnection(con); Sys.sleep(1)
+Isc <- str_split(Isc, ",", simplify = T)[2] %>% as.numeric()
 
 
 
@@ -40,8 +40,8 @@ write.serialConnection(con, ":SOUR:FUNC CURR ");
 write.serialConnection(con, ":SENS:FUNC 'VOLT:DC' ");  
 write.serialConnection(con, ":SENS:VOLT:PROT 3 ");  
 write.serialConnection(con, paste0(":SOUR:CURR:START ", 0));  
-write.serialConnection(con, paste0(":SOUR:CURR:STOP ", Ioc)); 
-write.serialConnection(con, paste0(":SOUR:CURR:STEP ", Ioc/50)); 
+write.serialConnection(con, paste0(":SOUR:CURR:STOP ", Isc)); 
+write.serialConnection(con, paste0(":SOUR:CURR:STEP ", Isc/50)); 
 write.serialConnection(con, ":SOUR:CURR:MODE SWE ");  
 write.serialConnection(con, ":SOUR:SWE:RANG AUTO ");  
 
