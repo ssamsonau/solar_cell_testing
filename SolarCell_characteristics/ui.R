@@ -8,6 +8,7 @@
 #
 
 library(shiny)
+library(DT)
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
@@ -22,35 +23,45 @@ shinyUI(fluidPage(
       actionButton("connect", "Open connection"),
       actionButton("disconnect", "Close connection"),
       h4("-----"),
-      h4("Program negative voltage values"),
-       numericInput("dots",
-                   "Number of Dots:",
-                   min = 10,
-                   max = 50,
-                   value = 50),
+      h3("Note: Program  expects negative voltage values"),
+      h4("-----"),
       numericInput("time",
                    "Time for each point measurement (in sec)",
                    min = 0.01,
                    max = 5,
                    value = 0.1),
       numericInput("max_curr",
-                   "Maximum allowed current (Keithley 2401 supports up to 1A)",
+                   "Maximum allowed current (in A) (Keithley 2401 supports up to 1A)",
                    min = 0,
                    max = 1,
                    value = 1),
       numericInput("max_volt",
-                   "Maximum allowed Voltage (Keithley 2401 supports up to 21V)",
+                   "Maximum allowed Voltage (in V) (Keithley 2401 supports up to 21V)",
                    min = 0,
                    max = 21,
                    value = 5),
+      
+      h4("-----------------------"),
+      
+      numericInput("dots",
+                   "Number of Dots:",
+                   min = 10,
+                   max = 50,
+                   value = 50),
+      numericInput("input_power",
+                   "Input Light Power (in W):",
+                   min = 0,
+                   value = 0.05),
+      
       actionButton("meassure", "Do measurements")
     ),
     
     # Show a plot of the generated distribution
     mainPanel(
       
-       plotOutput("distPlot"),
-       verbatimTextOutput("param")
+       plotOutput("finalPlot"),
+       verbatimTextOutput("param"),
+       DT::dataTableOutput("table")
     )
   )
 ))

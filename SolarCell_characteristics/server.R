@@ -11,6 +11,7 @@ library(shiny)
 library(serial)
 library(stringr)
 library(tidyverse)
+library(DT)
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
@@ -57,8 +58,9 @@ shinyServer(function(input, output) {
       write.serialConnection(con, ":Read?"); Sys.sleep(1)
       Isc <- read.serialConnection(con); Sys.sleep(1)
       Isc <- str_split(Isc, ",", simplify = T)[2] %>% as.numeric()
+      values$Isc <- Isc
       
-      
+      #browser()
       #find open circuit voltage
       write.serialConnection(con, ":SOUR:FUNC CURR "); 
       write.serialConnection(con, ":SOUR:CURR 0 ");
@@ -68,7 +70,8 @@ shinyServer(function(input, output) {
       write.serialConnection(con, ":OUTP ON "); Sys.sleep(2)
       write.serialConnection(con, ":Read?"); Sys.sleep(1)
       Voc <- read.serialConnection(con); Sys.sleep(1)
-      Voc <- str_split(Isc, ",", simplify = T)[1] %>% as.numeric()
+      Voc <- str_split(Voc, ",", simplify = T)[1] %>% as.numeric()
+      values$Voc <- Voc
       
       ## do the sweep
       write.serialConnection(con, "*RST ");  
@@ -114,31 +117,47 @@ shinyServer(function(input, output) {
       filter(volt < 0) %>%
       mutate(power = abs(curr) * abs(volt), 
              is_max = power == max(power))
+    values$df <- bind_rows(values$df, 
+                           tibble(
+                             curr = c(0, Isc),
+                             volt = c(Voc, 0),
+                             is_max = c(F, F)
+                           ))
     
     #Isc <- max(values$df$curr)
     #Voc <- max(values$df$volt)
-    max_p <- values$df %>% filter(is_max == T) %>% select(power) %>% unlist
-    
-    values$parameters <- 
-      paste(" Isc = ", Isc, "A \n",
-        "Voc = ", Voc, "V \n",
-        "Maximum Power = ", max_p, "W \n", 
-        "Fill Factor = ", max_p/(Isc * abs(Voc)))
+   
+      
     
   })
   
   output$param <- renderText({
-    values$parameters
+    
+    max_p <- values$df %>% filter(is_max == T) %>% select(power) %>% unlist
+    Isc <- values$Isc
+    Voc <- values$Voc
+    
+    paste(" Isc = ", Isc, "A \n",
+          "Voc = ", Voc, "V \n",
+          "Maximum Power = ", max_p, "W \n", 
+          "Fill Factor = ", max_p/(Isc * abs(Voc)), "\n",
+          "Efficiency = ", max_p/input$input_power *100, "%")
   })
   
-  output$distPlot <- renderPlot({
+  output$finalPlot <- renderPlot({
+    
+    I_maxPower <- values$df %>% filter(is_max == T) %>% select(curr) %>% unlist
+    V_maxPower <- values$df %>% filter(is_max == T) %>% select(volt) %>% unlist
     
     #browser()
     # generate bins based on input$bins from ui.R
-    ggplot(values$df, aes(x = curr, y = volt, color = is_max)) +
+    ggplot(values$df, aes(x = curr, y = volt, shape = is_max)) +
+      geom_rect(mapping=aes(xmin=0, xmax=values$Isc, ymin=0, ymax=values$Voc, fill="Isc Voc"), alpha = 0.05) +
+      geom_rect(mapping=aes(xmin=0, xmax=I_maxPower, ymin=0, ymax=V_maxPower, fill="maxPower"), alpha = 0.10) +
       geom_point() +
       xlab("Current, A") +
-      ylab("Voltage, V")
+      ylab("Voltage, V") 
+      
     
     
   })
@@ -160,5 +179,12 @@ shinyServer(function(input, output) {
     print("closing connection")
     close(values$con)
   })
+  
+  output$table <- DT::renderDataTable({
+    values$df
+  }, extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('csv', 'excel')
+  ))
   
 })
