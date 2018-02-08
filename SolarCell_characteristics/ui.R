@@ -48,10 +48,13 @@ shinyUI(fluidPage(
                    min = 10,
                    max = 50,
                    value = 50),
-      numericInput("input_power",
-                   "Input Light Power (in W):",
-                   min = 0,
-                   value = 0.05),
+      numericInput("input_power_density",
+                   "Input Light Power (in mW/cm2). It is ~ 100mW/cm2 for sunlight at the ground level:",
+                   value = 100),
+      numericInput("area",
+                   "Area of a solal cell (cm2):",
+                   value = 1),
+      
       
       actionButton("meassure", "Do measurements")
     ),
