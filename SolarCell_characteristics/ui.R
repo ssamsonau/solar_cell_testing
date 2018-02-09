@@ -24,8 +24,6 @@ shinyUI(fluidPage(
       actionButton("connect", "Open connection"),
       actionButton("disconnect", "Close connection"),
       h4("-----"),
-      h3("Note: Program  expects negative voltage values"),
-      h4("-----"),
       numericInput("time",
                    "Time for each point measurement (in sec)",
                    min = 0.01,
