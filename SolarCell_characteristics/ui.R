@@ -20,6 +20,7 @@ shinyUI(fluidPage(
   sidebarLayout(
     sidebarPanel(
       textInput("com", "COM port", value = "COM3"),
+      textOutput("is_open_connection"), 
       actionButton("connect", "Open connection"),
       actionButton("disconnect", "Close connection"),
       h4("-----"),
